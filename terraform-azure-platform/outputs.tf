@@ -61,3 +61,37 @@ output "primary_region" {
 output "secondary_region" {
   value = var.secondary_region
 }
+
+output "sql_failover_group_endpoint" {
+  value = module.database.failover_group_endpoint
+}
+
+output "sql_database_name" {
+  value = module.database.database_name
+}
+
+output "sql_admin_username" {
+  value = module.database.admin_username
+}
+
+output "sql_admin_password" {
+  value     = module.database.admin_password
+  sensitive = true
+}
+
+output "jumpbox_private_ip" {
+  value = module.compute.jumpbox_private_ip
+}
+
+output "jumpbox_admin_username" {
+  value = module.compute.admin_username
+}
+
+output "jumpbox_admin_password" {
+  value     = module.compute.admin_password
+  sensitive = true
+}
+
+output "dns_zone_name" {
+  value = module.identity.dns_zone_name
+}

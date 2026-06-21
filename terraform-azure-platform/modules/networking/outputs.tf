@@ -14,3 +14,7 @@ output "subnet_ids" {
     bastion          = azurerm_subnet.bastion.id
   }
 }
+
+output "vnet_name" {
+  value = azurerm_virtual_network.vnet.name
+}

@@ -22,8 +22,14 @@ resource "azurerm_container_registry" "acr" {
   name                = "acrstrideiq${random_string.acr_suffix.result}"
   resource_group_name = azurerm_resource_group.primary.name
   location            = var.primary_region
-  sku                 = "Basic"
+  sku                 = "Premium"
   tags                = var.tags
+
+  georeplications {
+    location                = var.secondary_region
+    zone_redundancy_enabled = false
+    tags                    = var.tags
+  }
 }
 
 module "networking_primary" {
@@ -132,4 +138,45 @@ module "cost_optimization" {
   source              = "./modules/cost_optimization"
   resource_group_name = azurerm_resource_group.primary.name
   tags                = var.tags
+}
+
+module "database" {
+  source                  = "./modules/database"
+  primary_rg_name         = azurerm_resource_group.primary.name
+  secondary_rg_name       = azurerm_resource_group.secondary.name
+  primary_location        = var.primary_region
+  secondary_location      = var.secondary_region
+  primary_vnet_id         = module.networking_primary.vnet_id
+  secondary_vnet_id       = module.networking_secondary.vnet_id
+  primary_pe_subnet_id    = module.networking_primary.subnet_ids.private_endpoint
+  secondary_pe_subnet_id  = module.networking_secondary.subnet_ids.private_endpoint
+  tags                    = var.tags
+}
+
+module "compute" {
+  source              = "./modules/compute"
+  resource_group_name = azurerm_resource_group.primary.name
+  location            = var.primary_region
+  bastion_subnet_id   = module.networking_primary.subnet_ids.bastion
+  jumpbox_subnet_id   = module.networking_primary.subnet_ids.private_endpoint
+  tags                = var.tags
+}
+
+# Workload Identity Federated Credentials for cert-manager
+resource "azurerm_federated_identity_credential" "cert_manager_primary" {
+  name                = "cert-manager-fed-cred-primary"
+  resource_group_name = azurerm_resource_group.primary.name
+  audience            = ["api://AzureADTokenExchange"]
+  issuer              = module.aks_primary.oidc_issuer_url
+  parent_id           = module.identity.cert_manager_primary_mi_id
+  subject             = "system:serviceaccount:cert-manager:cert-manager"
+}
+
+resource "azurerm_federated_identity_credential" "cert_manager_secondary" {
+  name                = "cert-manager-fed-cred-secondary"
+  resource_group_name = azurerm_resource_group.secondary.name
+  audience            = ["api://AzureADTokenExchange"]
+  issuer              = module.aks_secondary.oidc_issuer_url
+  parent_id           = module.identity.cert_manager_secondary_mi_id
+  subject             = "system:serviceaccount:cert-manager:cert-manager"
 }
