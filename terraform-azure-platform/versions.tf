@@ -2,8 +2,7 @@ terraform {
   required_version = ">= 1.5.0"
 
   backend "azurerm" {
-    # Backend configuration should be provided via init arguments or backend.tfvars
-    # Example: terraform init -backend-config="resource_group_name=rg-terraform-state" ...
+    # Configuration passed via -backend-config flags in CI/CD workflows
   }
 
   required_providers {
