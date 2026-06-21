@@ -1,12 +1,13 @@
 resource "azurerm_kubernetes_cluster" "aks" {
-  name                      = var.cluster_name
-  location                  = var.location
-  resource_group_name       = var.resource_group_name
-  dns_prefix                = var.cluster_name
-  kubernetes_version        = var.kubernetes_version
-  private_cluster_enabled   = var.enable_private_cluster
-  oidc_issuer_enabled       = var.enable_workload_identity
-  workload_identity_enabled = var.enable_workload_identity
+  name                                = var.cluster_name
+  location                            = var.location
+  resource_group_name                 = var.resource_group_name
+  dns_prefix                          = var.cluster_name
+  kubernetes_version                  = var.kubernetes_version
+  private_cluster_enabled             = var.enable_private_cluster
+  private_cluster_public_fqdn_enabled = var.enable_private_cluster
+  oidc_issuer_enabled                 = var.enable_workload_identity
+  workload_identity_enabled           = var.enable_workload_identity
 
   identity {
     type         = "UserAssigned"
