@@ -13,6 +13,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: production
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - uses: actions/checkout@v4
       - name: Azure Login
@@ -21,15 +22,38 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Verify Primary Cluster Exists
+        id: check_primary
+        run: |
+          if az aks show --resource-group ${{ secrets.AZURE_RG_PRIMARY }} --name ${{ secrets.AKS_CLUSTER_PRIMARY }} --query "name" -o tsv 2>/dev/null; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "::warning::Primary AKS cluster not found. Run Terraform Apply first."
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+      - name: Verify Secondary Cluster Exists
+        id: check_secondary
+        run: |
+          if az aks show --resource-group ${{ secrets.AZURE_RG_SECONDARY }} --name ${{ secrets.AKS_CLUSTER_SECONDARY }} --query "name" -o tsv 2>/dev/null; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "::warning::Secondary AKS cluster not found. Run Terraform Apply first."
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+      - name: Abort if clusters not ready
+        if: steps.check_primary.outputs.exists != 'true' || steps.check_secondary.outputs.exists != 'true'
+        run: |
+          echo "::error::One or both AKS clusters do not exist yet. Run the Terraform Apply workflow first to provision infrastructure, then re-run this deployment."
+          exit 1
       - name: Get AKS Credentials (Primary)
         run: az aks get-credentials --resource-group ${{ secrets.AZURE_RG_PRIMARY }} --name ${{ secrets.AKS_CLUSTER_PRIMARY }} --overwrite-existing
       - name: Setup Kubectl
         uses: azure/setup-kubectl@v3
-      - name: Deploy Manifests
+      - name: Deploy Manifests (Primary)
         run: |
           kubectl apply -f terraform-azure-platform/k8s/strideiq/
       - name: Get AKS Credentials (Secondary)
         run: az aks get-credentials --resource-group ${{ secrets.AZURE_RG_SECONDARY }} --name ${{ secrets.AKS_CLUSTER_SECONDARY }} --overwrite-existing
-      - name: Deploy Manifests Secondary
+      - name: Deploy Manifests (Secondary)
         run: |
           kubectl apply -f terraform-azure-platform/k8s/strideiq/
