@@ -1,0 +1,18 @@
+primary_region           = "eastus"
+secondary_region         = "centralus"
+cluster_name             = "aks-prod"
+cluster_version          = "1.29"
+vnet_cidr                = "10.0.0.0/16"
+min_node_count           = 2
+max_node_count           = 10
+enable_failover          = true
+enable_private_cluster   = true
+enable_zone_redundancy   = true
+enable_workload_identity = true
+enable_traffic_manager   = true
+tags = {
+  Environment = "production"
+  Project     = "StrideIQ"
+  ManagedBy   = "Terraform"
+  CostCenter  = "Engineering"
+}

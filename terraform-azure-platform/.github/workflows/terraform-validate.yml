@@ -1,0 +1,27 @@
+name: Terraform Validate
+on:
+  pull_request:
+    paths:
+      - 'terraform-azure-platform/**'
+  push:
+    branches:
+      - main
+    paths:
+      - 'terraform-azure-platform/**'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform-azure-platform
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+      - name: Terraform Format
+        run: terraform fmt -check
+      - name: Terraform Init
+        run: terraform init -backend=false
+      - name: Terraform Validate
+        run: terraform validate

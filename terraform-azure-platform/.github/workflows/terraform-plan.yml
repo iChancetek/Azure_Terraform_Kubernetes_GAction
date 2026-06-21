@@ -1,0 +1,58 @@
+name: Terraform Plan
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'terraform-azure-platform/**'
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform-azure-platform
+    steps:
+      - uses: actions/checkout@v4
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+      - name: Bootstrap Terraform State Storage
+        run: |
+          az group create --name ${{ secrets.TF_STATE_RG }} --location eastus
+          az storage account create --name ${{ secrets.TF_STATE_SA }} --resource-group ${{ secrets.TF_STATE_RG }} --location eastus --sku Standard_LRS --allow-blob-public-access false || true
+          az storage container create --name tfstate --account-name ${{ secrets.TF_STATE_SA }} --auth-mode login || true
+      - name: Terraform Init
+        run: |
+          terraform init \
+            -backend-config="resource_group_name=${{ secrets.TF_STATE_RG }}" \
+            -backend-config="storage_account_name=${{ secrets.TF_STATE_SA }}" \
+            -backend-config="container_name=tfstate" \
+            -backend-config="key=terraform.tfstate" \
+            -backend-config="use_oidc=true"
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -out=tfplan
+      - name: Comment PR
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const output = `#### Terraform Plan 📖\`${{ steps.plan.outcome }}\`\n\n<details><summary>Show Plan</summary>\n\n\`\`\`terraform\n${{ steps.plan.outputs.stdout }}\n\`\`\`\n\n</details>`;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })

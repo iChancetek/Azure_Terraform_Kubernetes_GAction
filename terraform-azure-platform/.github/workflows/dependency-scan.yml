@@ -1,0 +1,28 @@
+name: Dependency Scan (Dependabot trigger)
+on:
+  schedule:
+    - cron: '0 0 * * 1'
+  workflow_dispatch:
+
+jobs:
+  dependabot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create Dependabot config
+        run: |
+          mkdir -p .github
+          cat <<EOF > .github/dependabot.yml
+          version: 2
+          updates:
+            - package-ecosystem: "terraform"
+              directory: "/terraform-azure-platform"
+              schedule:
+                interval: "weekly"
+            - package-ecosystem: "github-actions"
+              directory: "/"
+              schedule:
+                interval: "weekly"
+          EOF
+      - name: Display Info
+        run: echo "Dependabot configuration generated."

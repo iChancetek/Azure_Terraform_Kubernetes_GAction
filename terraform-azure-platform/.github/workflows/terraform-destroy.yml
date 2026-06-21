@@ -1,0 +1,44 @@
+name: Terraform Destroy
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  destroy:
+    runs-on: ubuntu-latest
+    environment: disaster-recovery
+    defaults:
+      run:
+        working-directory: terraform-azure-platform
+    steps:
+      - uses: actions/checkout@v4
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+      - name: Bootstrap Terraform State Storage
+        run: |
+          az group create --name ${{ secrets.TF_STATE_RG }} --location eastus
+          az storage account create --name ${{ secrets.TF_STATE_SA }} --resource-group ${{ secrets.TF_STATE_RG }} --location eastus --sku Standard_LRS --allow-blob-public-access false || true
+          az storage container create --name tfstate --account-name ${{ secrets.TF_STATE_SA }} --auth-mode login || true
+      - name: Terraform Init
+        run: |
+          terraform init \
+            -backend-config="resource_group_name=${{ secrets.TF_STATE_RG }}" \
+            -backend-config="storage_account_name=${{ secrets.TF_STATE_SA }}" \
+            -backend-config="container_name=tfstate" \
+            -backend-config="key=terraform.tfstate" \
+            -backend-config="use_oidc=true"
+      - name: Terraform Destroy
+        run: terraform destroy -auto-approve
+      - name: Cleanup Terraform State Storage
+        if: always()
+        run: |
+          az group delete --name ${{ secrets.TF_STATE_RG }} --yes --no-wait
