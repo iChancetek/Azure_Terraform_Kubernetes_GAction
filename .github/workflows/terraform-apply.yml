@@ -5,6 +5,7 @@ on:
       - main
     paths:
       - 'terraform-azure-platform/**'
+      - '.github/workflows/terraform-apply.yml'
 
 permissions:
   id-token: write
