@@ -31,7 +31,7 @@ variable "cluster_name" {
 variable "cluster_version" {
   type        = string
   description = "The Kubernetes version for the AKS cluster."
-  default     = "1.29"
+  default     = "1.32"
   validation {
     condition     = can(regex("^[0-9]+\\.[0-9]+", var.cluster_version))
     error_message = "Cluster version must be in the format X.Y."

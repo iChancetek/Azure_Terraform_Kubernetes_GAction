@@ -22,7 +22,7 @@ jobs:
       TF_VAR_primary_region: "eastus"
       TF_VAR_secondary_region: "centralus"
       TF_VAR_cluster_name: "aks-prod"
-      TF_VAR_cluster_version: "1.30"
+      TF_VAR_cluster_version: "1.32"
       TF_VAR_vnet_cidr: "10.0.0.0/16"
       TF_VAR_min_node_count: "2"
       TF_VAR_max_node_count: "10"
