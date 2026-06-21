@@ -17,6 +17,20 @@ jobs:
     defaults:
       run:
         working-directory: terraform-azure-platform
+    env:
+      TF_IN_AUTOMATION: "true"
+      TF_VAR_primary_region: "eastus"
+      TF_VAR_secondary_region: "centralus"
+      TF_VAR_cluster_name: "aks-prod"
+      TF_VAR_cluster_version: "1.29"
+      TF_VAR_vnet_cidr: "10.0.0.0/16"
+      TF_VAR_min_node_count: "2"
+      TF_VAR_max_node_count: "10"
+      TF_VAR_enable_failover: "true"
+      TF_VAR_enable_private_cluster: "true"
+      TF_VAR_enable_zone_redundancy: "true"
+      TF_VAR_enable_workload_identity: "true"
+      TF_VAR_enable_traffic_manager: "true"
     steps:
       - uses: actions/checkout@v4
       - name: Azure Login
@@ -42,7 +56,7 @@ jobs:
             -backend-config="use_oidc=true"
       - name: Terraform Plan
         id: plan
-        run: terraform plan -out=tfplan
+        run: terraform plan -no-color -out=tfplan
       - name: Comment PR
         uses: actions/github-script@v7
         if: github.event_name == 'pull_request'
