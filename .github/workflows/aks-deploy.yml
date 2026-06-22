@@ -48,7 +48,7 @@ jobs:
       - name: Get AKS Credentials (Primary)
         run: az aks get-credentials --resource-group ${{ secrets.AZURE_RG_PRIMARY }} --name ${{ secrets.AKS_CLUSTER_PRIMARY }} --overwrite-existing
       - name: Setup Kubectl
-        uses: azure/setup-kubectl@v3
+        uses: azure/setup-kubectl@v5
       - name: Deploy Manifests (Primary)
         run: |
           kubectl apply -f terraform-azure-platform/k8s/strideiq/
